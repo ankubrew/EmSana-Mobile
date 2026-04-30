@@ -7,15 +7,53 @@ def main(page: ft.Page):
     page.title = "EmSana"
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-    page.theme_mode = ft.ThemeMode.DARK
-    page.bgcolor = "#0B0C10"
+    page.theme_mode = ft.ThemeMode.LIGHT
+    page.bgcolor = "#FFFFFF"
+    page.padding = 0
 
     is_login = ft.Ref[bool]()
     is_login.current = False 
 
-    email_input = ft.TextField(label="Email", width=300, border_radius=10)
-    password_input = ft.TextField(label="Пароль", password=True, can_reveal_password=True, width=300, border_radius=10)
-    status_text = ft.Text(value="", size=14, color=ft.Colors.RED)
+    email_input = ft.TextField(
+        label="EMAIL",
+        label_style=ft.TextStyle(
+            size=11,
+            weight=ft.FontWeight.W_500,
+            color="#999999",
+            letter_spacing=1.5,
+        ),
+        width=340,
+        height=55,
+        border=ft.InputBorder.UNDERLINE,
+        border_color="#E0E0E0",
+        focused_border_color="#000000",
+        cursor_color="#000000",
+        color="#000000",
+        text_size=15,
+        content_padding=ft.padding.only(left=0, top=20, bottom=8),
+    )
+
+    password_input = ft.TextField(
+        label="PASSWORD",
+        label_style=ft.TextStyle(
+            size=11,
+            weight=ft.FontWeight.W_500,
+            color="#999999",
+            letter_spacing=1.5,
+        ),
+        password=True,
+        can_reveal_password=True,
+        width=340,
+        height=55,
+        border=ft.InputBorder.UNDERLINE,
+        border_color="#E0E0E0",
+        focused_border_color="#000000",
+        cursor_color="#000000",
+        color="#000000",
+        text_size=15,
+        content_padding=ft.padding.only(left=0, top=20, bottom=8),
+    )
+    status_text = ft.Text(value="", size=13, color="#D32F2F", weight=ft.FontWeight.W_400)
 
     def wipe_data():
         page.client_storage.remove("access_token")
@@ -257,15 +295,15 @@ def main(page: ft.Page):
                 if endpoint == "/login":
                     execute_login(data.get("access_token")) 
                 else:
-                    status_text.value = "Регистрация успешна! Нажмите 'Уже есть аккаунт? Войти'"
-                    status_text.color = ft.Colors.GREEN
-                    lock_auth_ui(False)
+                    show_email_confirmation_pending_scene()
+                    return
             else:
                 raw_error = data.get('detail')
                 error_dict = {
-                    "User already registered": "Аккаунт уже есть. Нажмите 'Войти'",
-                    "Invalid login credentials": "Неверный Email или пароль!",
-                    "Password should be at least 6 characters.": "Пароль слишком короткий (минимум 6)",
+                    "User already registered": "Account already exists. Please log in.",
+                    "Invalid login credentials": "Invalid email or password.",
+                    "Password should be at least 6 characters.": "Password must be at least 6 characters.",
+                    "Email not confirmed": "Please confirm your email before logging in.",
                 }
                 status_text.value = f"Ошибка: {error_dict.get(raw_error, raw_error)}"
                 status_text.color = ft.Colors.RED
@@ -278,37 +316,244 @@ def main(page: ft.Page):
 
     def toggle_mode(e):
         is_login.current = not is_login.current
-        title_text.value = "Вход в EmSana" if is_login.current else "Регистрация в EmSana"
-        main_btn.text = "Войти" if is_login.current else "Создать аккаунт"
-        toggle_btn.text = "Нет аккаунта? Регистрация" if is_login.current else "Уже есть аккаунт? Войти"
-        status_text.value = ""
+        show_auth_scene()
+
+    title_text = ft.Text(
+        "Sign in to EmSana",
+        size=28,
+        weight=ft.FontWeight.BOLD,
+        color="#000000",
+        font_family="Inter",
+    )
+    main_btn = ft.ElevatedButton(
+        text="Log in",
+        width=340,
+        height=48,
+        on_click=handle_auth,
+        bgcolor="#000000",
+        color="#FFFFFF",
+        style=ft.ButtonStyle(
+            shape=ft.RoundedRectangleBorder(radius=6),
+            text_style=ft.TextStyle(size=15, weight=ft.FontWeight.W_600),
+        ),
+    )
+    google_btn = ft.OutlinedButton(
+        content=ft.Row(
+            [
+                ft.Image(
+                    src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg",
+                    width=18,
+                    height=18,
+                ),
+                ft.Text("Continue with Google", color="#000000", size=14, weight=ft.FontWeight.W_500),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=10,
+        ),
+        width=340,
+        height=48,
+        on_click=auth_google,
+        style=ft.ButtonStyle(
+            shape=ft.RoundedRectangleBorder(radius=6),
+            side=ft.BorderSide(1, "#E0E0E0"),
+        ),
+    )
+    toggle_btn = ft.TextButton(
+        "No account? Create one",
+        on_click=toggle_mode,
+        style=ft.ButtonStyle(
+            color="#6C63FF",
+        ),
+    )
+    forgot_password_btn = ft.TextButton(
+        "Forgot password?",
+        on_click=lambda e: show_forgot_password_scene(),
+        style=ft.ButtonStyle(
+            color="#6C63FF",
+        ),
+    )
+
+    def show_forgot_password_scene():
+        page.clean()
+        page.bgcolor = "#FFFFFF"
+
+        fp_email = ft.TextField(
+            label="EMAIL",
+            label_style=ft.TextStyle(size=11, weight=ft.FontWeight.W_500, color="#999999", letter_spacing=1.5),
+            width=340,
+            height=55,
+            border=ft.InputBorder.UNDERLINE,
+            border_color="#E0E0E0",
+            focused_border_color="#000000",
+            cursor_color="#000000",
+            color="#000000",
+            text_size=15,
+            content_padding=ft.padding.only(left=0, top=20, bottom=8),
+        )
+        fp_status = ft.Text("", size=13)
+
+        def send_reset(e):
+            if not fp_email.value:
+                fp_status.value = "Please enter your email."
+                fp_status.color = "#D32F2F"
+                page.update()
+                return
+            try:
+                res = requests.post(
+                    "http://127.0.0.1:8000/forgot-password",
+                    json={"email": fp_email.value},
+                )
+                fp_status.value = "If that email exists, a reset link has been sent."
+                fp_status.color = "#4CAF50"
+            except Exception:
+                fp_status.value = "Server is unreachable."
+                fp_status.color = "#D32F2F"
+            page.update()
+
+        page.add(
+            ft.Container(
+                content=ft.Column(
+                    [
+                        ft.Text("Reset password", size=28, weight=ft.FontWeight.BOLD, color="#000000"),
+                        ft.Container(height=8),
+                        ft.Text(
+                            "Enter your email and we'll send you a link to reset your password.",
+                            size=14,
+                            color="#666666",
+                            text_align=ft.TextAlign.CENTER,
+                        ),
+                        ft.Container(height=24),
+                        fp_email,
+                        ft.Container(height=20),
+                        ft.ElevatedButton(
+                            text="Send reset link",
+                            width=340,
+                            height=48,
+                            bgcolor="#000000",
+                            color="#FFFFFF",
+                            on_click=send_reset,
+                            style=ft.ButtonStyle(
+                                shape=ft.RoundedRectangleBorder(radius=6),
+                                text_style=ft.TextStyle(size=15, weight=ft.FontWeight.W_600),
+                            ),
+                        ),
+                        ft.Container(height=16),
+                        fp_status,
+                        ft.Container(height=12),
+                        ft.TextButton(
+                            "← Back to login",
+                            on_click=lambda e: show_auth_scene(),
+                            style=ft.ButtonStyle(color="#6C63FF"),
+                        ),
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=0,
+                ),
+                alignment=ft.alignment.center,
+                padding=ft.padding.symmetric(horizontal=40),
+                expand=True,
+            )
+        )
         page.update()
 
-    title_text = ft.Text("Регистрация в EmSana", size=35, weight="bold")
-    main_btn = ft.ElevatedButton("Создать аккаунт", width=300, height=50, on_click=handle_auth, bgcolor=ft.Colors.BLUE_700, color=ft.Colors.WHITE)
-    google_btn = ft.ElevatedButton(
-        content=ft.Row([ft.Image(src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg", width=20), ft.Text("Войти через Google", color=ft.Colors.BLACK, weight="bold")], alignment=ft.MainAxisAlignment.CENTER),
-        width=300, height=50, bgcolor=ft.Colors.WHITE, on_click=auth_google 
-    )
-    toggle_btn = ft.TextButton("Уже есть аккаунт? Войти", on_click=toggle_mode)
+    def show_email_confirmation_pending_scene():
+        page.clean()
+        page.bgcolor = "#FFFFFF"
+
+        page.add(
+            ft.Container(
+                content=ft.Column(
+                    [
+                        ft.Icon(ft.Icons.MARK_EMAIL_READ_OUTLINED, size=56, color="#6C63FF"),
+                        ft.Container(height=16),
+                        ft.Text("Check your email", size=28, weight=ft.FontWeight.BOLD, color="#000000"),
+                        ft.Container(height=8),
+                        ft.Text(
+                            "We sent a confirmation link to your email.\nClick it to activate your account.",
+                            size=14,
+                            color="#666666",
+                            text_align=ft.TextAlign.CENTER,
+                        ),
+                        ft.Container(height=32),
+                        ft.TextButton(
+                            "← Back to login",
+                            on_click=lambda e: show_auth_scene(),
+                            style=ft.ButtonStyle(color="#6C63FF"),
+                        ),
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=0,
+                ),
+                alignment=ft.alignment.center,
+                padding=ft.padding.symmetric(horizontal=40),
+                expand=True,
+            )
+        )
+        page.update()
 
     def show_auth_scene():
         email_input.value = ""
         password_input.value = ""
         status_text.value = ""
-        lock_auth_ui(False) 
+        lock_auth_ui(False)
+
+        # Update button/title text based on mode
+        if is_login.current:
+            title_text.value = "Sign in to EmSana"
+            main_btn.text = "Log in"
+            toggle_btn.text = "No account? Create one"
+        else:
+            title_text.value = "Create an account"
+            main_btn.text = "Create account"
+            toggle_btn.text = "Already have an account? Log in"
+
         page.clean()
+        page.bgcolor = "#FFFFFF"
         page.add(
-            title_text,
-            ft.Text("Платформа для особенных детей", color=ft.Colors.GREY_400),
-            ft.Container(height=20),
-            email_input,
-            password_input,
-            ft.Container(height=10),
-            main_btn,
-            google_btn,
-            toggle_btn,
-            status_text
+            ft.Container(
+                content=ft.Column(
+                    [
+                        title_text,
+                        ft.Container(height=24),
+                        google_btn,
+                        ft.Container(height=16),
+                        ft.Row(
+                            [
+                                ft.Container(
+                                    bgcolor="#E0E0E0", height=1, expand=True
+                                ),
+                                ft.Text(
+                                    "  or  ",
+                                    size=13,
+                                    color="#999999",
+                                    weight=ft.FontWeight.W_400,
+                                ),
+                                ft.Container(
+                                    bgcolor="#E0E0E0", height=1, expand=True
+                                ),
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            width=340,
+                        ),
+                        ft.Container(height=16),
+                        email_input,
+                        ft.Container(height=4),
+                        password_input,
+                        ft.Container(height=20),
+                        main_btn,
+                        ft.Container(height=12),
+                        forgot_password_btn if is_login.current else ft.Container(),
+                        toggle_btn,
+                        ft.Container(height=8),
+                        status_text,
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=0,
+                ),
+                alignment=ft.alignment.center,
+                padding=ft.padding.symmetric(horizontal=40),
+                expand=True,
+            )
         )
         page.update()
 
